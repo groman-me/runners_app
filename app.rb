@@ -10,12 +10,14 @@ class App < Roda
       #'Strict-Transport-Security'=>'max-age=16070400;', # Uncomment if only allowing https:// access
       'X-Frame-Options'=>'deny',
       'X-Content-Type-Options'=>'nosniff',
-      'X-XSS-Protection'=>'1; mode=block',
-      'Access-Control-Allow-Origin' => 'http://localhost:9293'
+      'X-XSS-Protection'=>'1; mode=block'
 
   DB = Sequel.connect(ENV.fetch('DATABASE_URL'))
+  ALLOWED_HOSTS = %w(groman-me.github.io localhost)
 
   route do |r|
+    set_cors_header(request, response)
+
     r.root do
       r.redirect "/week.json"
     end
@@ -33,6 +35,7 @@ class App < Roda
     end
   end
   
+  private
 
   def stats_sql
     sql = <<-SQL
@@ -67,4 +70,12 @@ class App < Roda
              END DESC NULLS LAST
     SQL
   end
+
+  def set_cors_header(req, resp)
+    if ALLOWED_HOSTS.include?(req.host)
+      uri = URI(request.referrer)
+      resp['Access-Control-Allow-Origin'] = "#{uri.scheme}://#{uri.host}:#{uri.port}"
+    end
+  end
+
 end
